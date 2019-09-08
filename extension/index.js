@@ -10,8 +10,10 @@ module.exports = function(nodecg) {
   });
 
   nodecg.listenFor("mark-highlight", timecode => {
-    timecodes.value.push(timecode);
-    console.log("mark-hightlight", timecode);
+    if (timecode) {
+      timecodes.value.push(timecode);
+      console.log("mark-hightlight", timecode);
+    }
   });
   nodecg.listenFor("generate-end-video", () => {
     console.log("generate-end-video");
@@ -22,9 +24,12 @@ module.exports = function(nodecg) {
   function generateEndVideo() {
     // TODO find the recording for the current stream
 
-    const duration = 20;
+    const wholeVideo = 234;
 
     const highlightCount = timecodes.value.length;
+
+    const duration = parseInt(wholeVideo / highlightCount);
+
     let completedHighlights = 0;
 
     for (let i = 0; i < highlightCount; i++) {
@@ -153,8 +158,17 @@ module.exports = function(nodecg) {
       .videoCodec("copy")
       .on("end", () => {
         console.log("Merging finished");
-        callback();
+        ffmpeg()
+          .input("/tmp/highlight/without_sound.flv")
+          .input("/home/stream/stream/see_you_next_time.mp3")
+          .audioCodec("copy")
+          .videoCodec("copy")
+          .on("end", () => {
+            console.log("Audio added");
+            callback();
+          })
+          .save(outputFile);
       })
-      .save(outputFile);
+      .save("/tmp/highlight/without_sound.flv");
   }
 };
