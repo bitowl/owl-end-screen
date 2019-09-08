@@ -1,0 +1,32 @@
+{
+  "name": "owl-end-screen",
+  "version": "0.0.0",
+  "description": "Create a video for the end screen",
+  "homepage": "",
+  "author": {
+    "name": "bitowl",
+    "email": "git@bitowl.de",
+    "url": "https://bitowl.net"
+  },
+  "files": [
+    "dashboard",
+    "graphics",
+    "extension.js",
+    "extension"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "",
+    "nodecg-bundle"
+  ],
+  "nodecg": {
+    "compatibleRange": "^1.1.1",
+    "graphics": [
+      {
+        "file": "index.html",
+        "width": 1280,
+        "height": 720
+      }
+    ]
+  }
+}

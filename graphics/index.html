@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <script src="obs-websocket.js"></script>
+
+    <script>
+      var currentTransition;
+      var currentScene;
+      var currentPreview;
+
+      obs = new OBSWebSocket();
+
+      obs.onSwitchScenes(function(data) {
+        console.log(data);
+        deFocus("scene" + currentScene);
+        focus("scene" + data.sceneName);
+        currentScene = data.sceneName;
+      });
+
+      obs.onPreviewSceneChanged(function(data) {
+        deFocus("preview" + currentPreview);
+        focus("preview" + data.sceneName);
+        currentPreview = data.sceneName;
+      });
+
+      obs.onTransitionListChanged(function(data) {
+        console.log("transition", data);
+      });
+
+      obs.onSwitchTransition(function(data) {
+        console.log("transition act", data);
+
+        deFocus("transition" + currentTransition);
+        focus("transition" + data.transitionName);
+        currentTransition = data.transitionName;
+      });
+
+      obs.on("error", err => {
+        console.error("socket error:", err);
+      });
+
+      function connect() {
+        console.log("try to connect");
+        obs.connect({ address: "192.168.0.192:12345" }).then(data => {
+          obs.getSceneList().then(onSceneList);
+          obs.getTransitionList().then(onTransitionList);
+          obs.getPreviewScene().then(onPreviewScene);
+        });
+      }
+      connect();
+
+      function onSceneList(data) {
+        console.log(data);
+        var parent = document.getElementById("scenes");
+        var parentPreviews = document.getElementById("previews");
+        for (index in data.scenes) {
+          var scene = data.scenes[index];
+          createButton(
+            parent,
+            scene.name,
+            "scene" + scene.name,
+            "javascript:switchScene('" + scene.name + "')"
+          );
+          createButton(
+            parentPreviews,
+            scene.name,
+            "preview" + scene.name,
+            "javascript:previewScene('" + scene.name + "')"
+          );
+        }
+        currentScene = data.currentScene;
+
+        focus("scene" + currentScene);
+      }
+
+      function onTransitionList(data) {
+        console.log(data);
+        var parent = document.getElementById("transitions");
+        for (index in data.transitions) {
+          var transition = data.transitions[index];
+          createButton(
+            parent,
+            transition.name,
+            "transition" + transition.name,
+            "javascript:setTransition('" + transition.name + "')"
+          );
+        }
+        currentTransition = data.currentTransition;
+
+        focus("transition" + currentTransition);
+      }
+
+      function onPreviewScene(data) {
+        console.log(data);
+        currentPreview = data.name;
+        focus("preview" + currentPreview);
+      }
+
+      function switchScene(name) {
+        obs.setCurrentScene({ "scene-name": name }).then(data => {
+          console.log("switched: ", data);
+        });
+      }
+
+      function previewScene(name) {
+        obs.setPreviewScene({ "scene-name": name }).then(data => {
+          console.log("previewd: ", data);
+        });
+      }
+
+      function setTransition(name) {
+        if (name == currentTransition) {
+          // switch preview and active scene instead
+          obs
+            .transitionToProgram({})
+            .then(data => console.log("programm", data));
+        } else {
+          obs.setCurrentTransition({ "transition-name": name }).then(data => {
+            console.log("settransition: ", data);
+          });
+        }
+      }
+
+      function createButton(div, text, id, href) {
+        var elem = document.createElement("a");
+        elem.className = "button";
+        elem.id = id;
+        elem.appendChild(document.createTextNode(text));
+        elem.href = href;
+        div.appendChild(elem);
+      }
+
+      function deFocus(id) {
+        document.getElementById(id).className = "button inactive";
+      }
+      function focus(id) {
+        document.getElementById(id).className = "button active";
+      }
+    </script>
+
+    <style>
+      div {
+        margin-bottom: 5px;
+      }
+      .button {
+        width: 100px;
+        height: 100px;
+        display: table-cell;
+        vertical-align: middle;
+        border-right: 5px solid #fff;
+        background: #ccc;
+        text-align: center;
+        color: #fff;
+        font-family: sans-serif;
+        font-size: 20px;
+        text-decoration: none;
+      }
+
+      .inactive {
+        background: #cccccc;
+      }
+
+      #scenes .active {
+        background: #21ca21;
+      }
+      #previews .active {
+        background: #36a7ff;
+      }
+      #transitions .active {
+        background: #ef9f1d;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="scenes"></div>
+    <div id="previews"></div>
+    <div id="transitions"></div>
+    <br />
+    <a class="button" href="javascript:markHightlight()">Mark highlight</a>
+    <a class="button" href="javascript:generateEndVideo()"
+      >Generate end video</a
+    >
+
+    <script>
+      function markHightlight() {
+        nodecg.sendMessage("mark-highlight");
+      }
+
+      function generateEndVideo() {
+        nodecg.sendMessage("generate-end-video");
+      }
+    </script>
+  </body>
+</html>
