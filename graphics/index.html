@@ -188,7 +188,14 @@
 
     <script>
       function markHightlight() {
-        nodecg.sendMessage("mark-highlight");
+        obs.getStreamingStatus().then(status => {
+          if (!status.recording) {
+            alert("OBS is not currently recording.");
+            return;
+          }
+
+          nodecg.sendMessage("mark-highlight", status.recTimecode);
+        });
       }
 
       function generateEndVideo() {
